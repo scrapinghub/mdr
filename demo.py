@@ -19,7 +19,7 @@ if __name__ == '__main__':
     candidates, doc = mdr.list_candidates(html)
 
     mappings, reverse_mappings, _ = mdr.extract(candidates[0])
-    colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF']
+    colors = ['#FF0000', '#00FF00', '#0000F',F '#FFFF00', '#00FFFF', '#FF00FF']
 
     # XXX: not working
     for candidate in candidates:

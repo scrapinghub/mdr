@@ -42,7 +42,7 @@ class MDR(object):
     Notes
     -----
     This class follow the approach in [1] but change the similarity from
-    string edit distanceto clustered tree match [2] and [3].
+    string edit distance to clustered tree match in [2] and [3].
 
     References
     ----------
@@ -62,11 +62,11 @@ class MDR(object):
 
     def list_candidates(self, html, encoding='utf8'):
         """
-        list all the candidates of data record's parent.
+        list all the data record candidates.
 
         Returns
         -------
-        A list of element
+        A list of element which are the parent of the candidate.
         """
         d = {}
         parser = etree.HTMLParser(encoding=encoding)
@@ -85,19 +85,13 @@ class MDR(object):
 
         return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True)], doc
 
-    def extract(self, fragment):
+    def extract(self, fragment, **kwargs):
         """
-        extract the data record from HTML fragment.
-
-        Notes
-        -----
-        the fragment should be the parent of the date record.
+        extract the data record from data record candidate.
         """
         m = self.calculate_similarity_matrix(fragment)
-        print len(self.tree_sim_cache)
         clusters = self.hcluster(m)
         all_records = []
-        print clusters
 
         # for each cluster type check startswith and ends with
         for c in set(clusters):
@@ -118,7 +112,7 @@ class MDR(object):
             all_records.append([average_sim, records])
 
         records = max(all_records, key=operator.itemgetter(0))[1]
-        return self.ra.align(*records)
+        return self.ra.align(*records, **kwargs)
 
     def calculate_similarity_matrix(self, doc):
         n = len(doc)
@@ -158,7 +152,7 @@ class RecordAligner(object):
     def __init__(self):
         self.pta = PartialTreeAligner()
 
-    def align(self, *records):
+    def align(self, *records, **kwargs):
         """partial align multiple data records.
 
         for example:
@@ -175,19 +169,19 @@ class RecordAligner(object):
         >>> [e.tag for e in t1]         # the old DOM tree stay same
         ['x1', 'x2', 'x3', 'x', 'b', 'd']
         """
+        cmp = kwargs.pop('cmp', None) or Record.size
+        sorted_records = sorted(records, key=cmp)
 
-        # sort by the tree size
-        sorted_records = sorted(records, key=Record.size)
+        # find largest record
+        seed = kwargs.pop('seed_record', None) or sorted_records.pop()
 
-        # seed is the largest record
-        seed = sorted_records.pop()
         seed_copy = copy.deepcopy(seed)
 
         # a dict like {t2: {}, t3: {}, ...}
-        # the nested dictionary is mapping from seed tree element to itself
+        # the nested dictionary is mapping from seed tree elements to target elements
         mappings = collections.defaultdict(dict)
 
-        # a dict mapping from tree element to seed element
+        # a dict mapping from tree elements to seed elements
         reverse_mappings = {}
 
         initial_mapping = self._create_mapping(seed_copy, seed)
