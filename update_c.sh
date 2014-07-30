@@ -1,1 +1,1 @@
-cython mdr/_tree.pyx
+cython -a mdr/_tree.pyx

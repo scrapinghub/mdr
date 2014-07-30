@@ -3,6 +3,15 @@ import numpy as np
 import copy
 
 from .utils import find_continous_subsequence, reverse_dict
+from ._tree import _clustered_tree_match, _simple_tree_match, tree_size
+
+def normalized_simple_tree_match(t1, t2):
+    t1size = tree_size(t1)
+    t2size = tree_size(t2)
+    return _simple_tree_match(t1, t2) / (2.0 * (t1size + t2size))
+
+def clustered_tree_match(t1, t2, c1=1, c2=1):
+    return _clustered_tree_match(t1, t2, c1, c2)
 
 class TreeAlignment(object):
 

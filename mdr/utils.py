@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import re
-import functools
 import itertools
 
 def find_continous_subsequence(iterable, predicate):

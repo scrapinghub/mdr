@@ -3,7 +3,6 @@ import copy
 import collections
 import itertools
 import operator
-import re
 
 from cStringIO import StringIO
 from lxml import etree
@@ -11,8 +10,8 @@ from lxml import etree
 import numpy as np
 import scipy.cluster.hierarchy as sch
 
-from ._tree import tree_size, clustered_tree_match
-from .tree import PartialTreeAligner
+from ._tree import tree_size
+from .tree import PartialTreeAligner, clustered_tree_match, normalized_simple_tree_match
 from .utils import chop, reverse_dict, common_prefix, simplify_xpath
 
 class Record(object):
@@ -64,18 +63,25 @@ class MDR(object):
         """
         list all the data record candidates.
 
+        Notes
+        -----
+        The idea is the find the elements has the lots of text nodes.
+
         Returns
         -------
-        A list of element which are the parent of the candidate.
+        A sorted list of elements with descreaing order of odds of being an candidate.
         """
-        d = {}
+        if isinstance(html, unicode):
+            html = html.encode(encoding)
+
         parser = etree.HTMLParser(encoding=encoding)
         doc = etree.parse(StringIO(html), parser)
 
-        # find all the text nodes
-        for text in doc.xpath('//*/text()[normalize-space()]'):
-            e = text.getparent()
-            xpath = doc.getpath(e)
+        d = {}
+        # find all the non-empty text nodes
+        for e in doc.xpath('//*/text()[normalize-space()]'):
+            p = e.getparent()
+            xpath = doc.getpath(p)
             d.setdefault(simplify_xpath(xpath), []).append(xpath)
 
         counter = collections.Counter()
@@ -85,11 +91,11 @@ class MDR(object):
 
         return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True)], doc
 
-    def extract(self, fragment, **kwargs):
+    def extract(self, element, **kwargs):
         """
         extract the data record from data record candidate.
         """
-        m = self.calculate_similarity_matrix(fragment)
+        m = self.calculate_similarity_matrix(element)
         clusters = self.hcluster(m)
         all_records = []
 
@@ -101,7 +107,7 @@ class MDR(object):
                 _clusters = [g[0] for g in group]
                 _indexes = [g[1] for g in group]
                 if c in _clusters and len(_clusters) < len(clusters):
-                    records.append(Record(*[fragment[i] for i in _indexes]))
+                    records.append(Record(*[element[i] for i in _indexes]))
 
             if not records:
                 continue
