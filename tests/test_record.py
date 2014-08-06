@@ -1,7 +1,7 @@
 import unittest
 from lxml.html import etree
 
-from ..mdr import RecordAligner, Record
+from mdr.mdr import RecordAligner, Record
 
 t1 = etree.XML("""<root>
                     <a></a>

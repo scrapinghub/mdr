@@ -1,4 +1,4 @@
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 import numpy
 
 ext_modules = [Extension('mdr._tree',
@@ -14,7 +14,7 @@ setup(name='mdr',
       author_email="pengtaoo@gmail.com",
       url='https://github.com/tpeng/mdr',
       license='MIT',
-      packages=['mdr'],
+      packages=find_packages(exclude=['tests', 'tests.*']),
       ext_modules=ext_modules,
       install_requires=['lxml', 'scipy>=0.7.0', 'numpy>=1.5.1']
 )

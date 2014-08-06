@@ -1,8 +1,8 @@
 import unittest
 
 from lxml import etree
-from .._tree import _simple_tree_match
-from ..tree import clustered_tree_match
+from mdr._tree import _simple_tree_match
+from mdr.tree import clustered_tree_match
 
 s1 = """<root>
             <b>

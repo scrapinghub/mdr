@@ -1,6 +1,6 @@
 import unittest
 
-from ..mdr import Record, RecordFinder
+from mdr.mdr import Record, RecordFinder
 
 def _create_similarity_cache(elements):
 
