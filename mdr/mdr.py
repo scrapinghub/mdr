@@ -34,9 +34,8 @@ class Record(object):
     def __str__(self):
         return '<Record [%s]>' % ", ".join(repr(tree) for tree in self.trees)
 
-    @staticmethod
-    def size(record):
-        return sum(tree_size(t) for t in record.trees)
+    def size(self):
+        return sum(tree_size(t) for t in self.trees)
 
 class MDR(object):
     """
@@ -89,21 +88,18 @@ class MDR(object):
 
         return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True)], doc
 
-    def extract(self, element, record=None, cmp=Record.size):
+    def extract(self, element, record=None):
         """
         extract the data record from data record candidate.
 
         Parameters
         ----------
-        element: HTML element
+        element: lxml HTML element
             the HTML element of the candidate
 
         record: optional
             The seed record learned before.
             used to speed up the extraction without finding the seed elements.
-
-        cmp: optional
-            The function used to get the weight of a ``Record``.
 
         See Also
         --------
@@ -126,7 +122,7 @@ class MDR(object):
         records = rf.find_best_division(element.getchildren(), clusters)
 
         if records:
-            return self.ra.align(records, **kwargs)
+            return self.ra.align(records, record)
 
         return None, {}
 
@@ -134,6 +130,7 @@ class MDR(object):
         """calculate the similarity matrix for each child of the given element
         """
         n = len(element)
+
         m = np.zeros((n, n), np.float)
         for i in range(n):
             for j in range(n):
@@ -194,7 +191,7 @@ class RecordFinder(object):
         return max(all_records, key=operator.itemgetter(0))[1]
 
     def calculate_record_similarity(self, r1, r2):
-        """calculate similarity between two Record.
+        """calculate similarity between two Records.
         """
 
         m = np.zeros((len(r1)+1, len(r2)+1), np.float)
@@ -212,7 +209,7 @@ class RecordAligner(object):
     def __init__(self):
         self.pta = PartialTreeAligner()
 
-    def align(self, records, record=None, cmp=Record.size):
+    def align(self, records, record=None):
         """Partial align multiple data records with partial tree match [1]_
 
         Parameters
@@ -224,15 +221,12 @@ class RecordAligner(object):
             The seed record learned before.
             used to speed up the extraction without finding the seed elements.
 
-        cmp: optional
-            The function used to get the weight of a ``Record``.
-
         Returns
         -------
         seed_record: ``Record``
              the seed record to match against other record trees.
 
-        mappings: defaultdict(list)
+        mapping: defaultdict(list)
              map from seed elements to a list of matched target elements.
 
         References
@@ -241,9 +235,9 @@ class RecordAligner(object):
         <http://doi.acm.org/10.1145/1060745.1060761>
 
         """
-        sorted_records = sorted(records, key=cmp)
+        sorted_records = sorted(records, key=lambda r: r.size())
 
-        # find largest record
+        # find biggest record
         seed = record or sorted_records.pop()
         seed_copy = copy.deepcopy(seed)
 
