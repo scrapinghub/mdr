@@ -12,7 +12,7 @@ import scipy.cluster.hierarchy as sch
 
 from ._tree import tree_size
 from .tree import PartialTreeAligner, clustered_tree_match
-from .utils import chop, common_prefix, simplify_xpath
+from .utils import split_sequence, common_prefix, simplify_xpath
 
 class Record(object):
     """A class represent a data record.
@@ -89,44 +89,58 @@ class MDR(object):
 
         return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True)], doc
 
-    def extract(self, element, **kwargs):
+    def extract(self, element, record=None, cmp=Record.size):
         """
         extract the data record from data record candidate.
+
+        Parameters
+        ----------
+        element: HTML element
+            the HTML element of the candidate
+
+        record: optional
+            The seed record learned before.
+            used to speed up the extraction without finding the seed elements.
+
+        cmp: optional
+            The function used to get the weight of a ``Record``.
+
+        See Also
+        --------
+        ``RecordAligner``
+
+        Returns
+        -------
+        seed_record: ``Record``
+             the seed record to match against other record trees.
+
+        mappings: defaultdict(list)
+             map from seed elements to a list of matched target elements.
+
         """
         m = self.calculate_similarity_matrix(element)
         clusters = self.hcluster(m)
-        all_records = []
+        assert len(clusters) == len(m)
 
-        # for each cluster type check startswith and ends with
-        for c in set(clusters):
-            records = []
+        rf = RecordFinder(self.tree_sim_cache)
+        records = rf.find_best_division(element.getchildren(), clusters)
 
-            for group in chop(clusters, c):
-                _clusters = [g[0] for g in group]
-                _indexes = [g[1] for g in group]
-                if c in _clusters and len(_clusters) < len(clusters):
-                    records.append(Record(*[element[i] for i in _indexes]))
+        if records:
+            return self.ra.align(records, **kwargs)
 
-            if not records:
-                continue
+        return None, {}
 
-            similarities = [self.calculate_record_similarity(r1, r2) for r1, r2 in itertools.combinations(records, 2)]
-            average_sim = sum(similarities) / (len(similarities) + 1)
-
-            all_records.append([average_sim, records])
-
-        records = max(all_records, key=operator.itemgetter(0))[1]
-        return self.ra.align(*records, **kwargs)
-
-    def calculate_similarity_matrix(self, doc):
-        n = len(doc)
+    def calculate_similarity_matrix(self, element):
+        """calculate the similarity matrix for each child of the given element
+        """
+        n = len(element)
         m = np.zeros((n, n), np.float)
         for i in range(n):
             for j in range(n):
                 if j >= i:
-                    m[i, j] = clustered_tree_match(doc[i], doc[j])
-                    self.tree_sim_cache.setdefault((doc[i], doc[j]), m[i, j])
-                    self.tree_sim_cache.setdefault((doc[j], doc[i]), m[i, j])
+                    m[i, j] = clustered_tree_match(element[i], element[j])
+                    self.tree_sim_cache[(element[i], element[j])] = m[i, j]
+                    self.tree_sim_cache[(element[j], element[i])] = m[i, j]
                     m[j, i] = m[i, j]
         return m
 
@@ -137,13 +151,57 @@ class MDR(object):
         ind = sch.fcluster(L, self.threshold, 'distance')
         return ind.tolist()
 
+class RecordFinder(object):
+    """
+    A class to find the record from a list of elements.
+    """
+    def __init__(self, cache):
+        self.tree_similarity_cache = dict(cache)
+
+    def find_best_division(self, elements, clusters):
+        """find the best record division
+
+        Parameters
+        ----------
+        elements: list
+            a list of the HTML element
+        clusters: list
+            a list of the cluster id for each element in ``elements``
+        """
+        assert len(elements) == len(clusters)
+
+        if len(set(clusters)) == len(clusters):
+            return None
+
+        all_records = []
+
+        for c in set(clusters):
+            records = []
+
+            for group in split_sequence(zip(elements, clusters), lambda x: x[1] == c):
+                _clusters = [g[1] for g in group]
+                if c in _clusters and len(_clusters) < len(clusters):
+                    records.append(Record(*[g[0] for g in group]))
+
+            if not records:
+                continue
+
+            similarities = [self.calculate_record_similarity(r1, r2) for r1, r2 in itertools.combinations(records, 2)]
+            average_sim = sum(similarities) / (len(similarities) + 1)
+
+            all_records.append([average_sim, records])
+
+        return max(all_records, key=operator.itemgetter(0))[1]
+
     def calculate_record_similarity(self, r1, r2):
         """calculate similarity between two Record.
         """
+
         m = np.zeros((len(r1)+1, len(r2)+1), np.float)
+
         for i in xrange(1, len(m)):
             for j in xrange(1, len(m[0])):
-                sim = self.tree_sim_cache.get((r1[i - 1], r2[j - 1]))
+                sim = self.tree_similarity_cache.get((r1[i - 1], r2[j - 1]))
                 assert sim != None, 'tree %s %s not in cache' % (r1[i-1], r2[j-1])
                 m[i, j] = max(m[i, j - 1], m[i - 1, j], m[i - 1][j - 1] + sim)
 
@@ -181,6 +239,7 @@ class RecordAligner(object):
         ----------
         .. [1] Web Data Extraction Based on Partial Tree Alignment
         <http://doi.acm.org/10.1145/1060745.1060761>
+
         """
         sorted_records = sorted(records, key=cmp)
 

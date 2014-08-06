@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
 import itertools
-import collections
 
 def find_continous_subsequence(iterable, predicate):
     """
@@ -19,23 +18,27 @@ def find_continous_subsequence(iterable, predicate):
             seqs.append(list(values))
     return seqs
 
-def chop(iterable, c):
+def split_sequence(seq, predicate):
     """
-    chop the iterable by the element equals to c
+    split the sequence at the position when predicate return true
 
-    >>> list(chop([0, 1, 2, 1, 2], 1))
-    [[(0, 0)], [(1, 1), (2, 2)], [(1, 3), (2, 4)]]
+    >>> list(split_sequence([0, 1, 2, 1, 2], lambda x: x == 1))
+    [[0], [1, 2], [1, 2]]
 
-    >>> list(chop([0, 1, 2, 1, 2, 1], 2))
-    [[(0, 0), (1, 1)], [(2, 2), (1, 3)], [(2, 4), (1, 5)]]
+    >>> list(split_sequence([0, 1, 2, 1, 2, 1], lambda x: x == 2))
+    [[0, 1], [2, 1], [2, 1]]
+
+    >>> list(split_sequence([('a', 1), ('b', 2), ('c', 1)], lambda x: x[1] == 1))
+    [[('a', 1), ('b', 2)], [('c', 1)]]
     """
     seqs = []
-    for i, s in enumerate(iterable):
-        if s == c:
-            yield seqs
-            seqs = [(s, i)]
+    for s in seq:
+        if predicate(s):
+            if seqs:
+                yield seqs
+            seqs = [s]
         else:
-            seqs.append((s, i))
+            seqs.append(s)
     if seqs:
         yield seqs
 
