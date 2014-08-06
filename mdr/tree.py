@@ -88,7 +88,6 @@ class SimpleTreeAligner(object):
         """
         align two DOM trees.
         """
-        # print 'align_tree', t1, t2
         if t1 is None or t2 is None:
             return TreeAlignment()
 

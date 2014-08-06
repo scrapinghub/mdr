@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 import itertools
+import collections
 
 def find_continous_subsequence(iterable, predicate):
     """
@@ -13,22 +14,9 @@ def find_continous_subsequence(iterable, predicate):
     [[1]]
     """
     seqs = []
-    seq = []
-    continuous = False
-
-    for i in iterable:
-        if predicate(i):
-            if continuous:
-                seq.append(i)
-            else:
-                seq = [i]
-                continuous = True
-        elif continuous:
-            seqs.append(seq)
-            seq = []
-            continuous = False
-    if len(seq):
-        seqs.append(seq)
+    for key, values in itertools.groupby(iterable, key=predicate):
+        if key == True:
+            seqs.append(list(values))
     return seqs
 
 def chop(iterable, c):

@@ -1,6 +1,7 @@
 import unittest
 
 from ..mdr import MDR
+
 from ..tests import get_page
 
 def assert_element(expected_tag, expected_class, expected_id, element):

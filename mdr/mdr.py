@@ -11,10 +11,14 @@ import numpy as np
 import scipy.cluster.hierarchy as sch
 
 from ._tree import tree_size
-from .tree import PartialTreeAligner, clustered_tree_match, normalized_simple_tree_match
-from .utils import chop, reverse_dict, common_prefix, simplify_xpath
+from .tree import PartialTreeAligner, clustered_tree_match
+from .utils import chop, common_prefix, simplify_xpath
 
 class Record(object):
+    """A class represent a data record.
+
+    Usually it just a list of DOM elements.
+    """
     def __init__(self, *trees):
         self.trees = trees
 
@@ -28,7 +32,7 @@ class Record(object):
         return self.trees[item]
 
     def __str__(self):
-        return 'Record %s [%s..%s]' % (len(self.trees), self.trees[0], self.trees[-1])
+        return '<Record [%s]>' % ", ".join(repr(tree) for tree in self.trees)
 
     @staticmethod
     def size(record):
@@ -38,20 +42,18 @@ class MDR(object):
     """
     Mining Data Record base on clustering and tree similarity.
 
-    Notes
-    -----
-    This class follow the approach in [1] but change the similarity from
-    string edit distance to clustered tree match in [2] and [3].
+    This class follow the approach in [1]_ but change the similarity from
+    string edit distance to clustered tree match in [2]_ and [3]_.
 
     References
     ----------
-    [1] Using clustering and edit distance techniques for automatic web data extraction
+    .. [1] Using clustering and edit distance techniques for automatic web data extraction
     <http://link.springer.com/chapter/10.1007/978-3-540-76993-4_18>
 
-    [2] Web Data Extraction Based on Partial Tree Alignment
+    .. [2] Web Data Extraction Based on Partial Tree Alignment
     <http://doi.acm.org/10.1145/1060745.1060761>
 
-    [3] Automatic Wrapper Adaptation by Tree Edit Distance Matching
+    .. [3] Automatic Wrapper Adaptation by Tree Edit Distance Matching
     <http://arxiv.org/pdf/1103.1252.pdf>
     """
     def __init__(self, threshold=0.9):
@@ -63,13 +65,9 @@ class MDR(object):
         """
         list all the data record candidates.
 
-        Notes
-        -----
-        The idea is the find the elements has the lots of text nodes.
-
         Returns
         -------
-        A sorted list of elements with descreaing order of odds of being an candidate.
+        A sorted list of elements with descreasing order of odds of being an candidate.
         """
         if isinstance(html, unicode):
             html = html.encode(encoding)
@@ -133,16 +131,14 @@ class MDR(object):
         return m
 
     def hcluster(self, m):
-        """
-        hierarchy clustering base on the given similarity matrix.
+        """hierarchy clustering base on the given similarity matrix.
         """
         L = sch.linkage(m, method='complete')
         ind = sch.fcluster(L, self.threshold, 'distance')
         return ind.tolist()
 
     def calculate_record_similarity(self, r1, r2):
-        """
-        calculate similarity between two Record.
+        """calculate similarity between two Record.
         """
         m = np.zeros((len(r1)+1, len(r2)+1), np.float)
         for i in xrange(1, len(m)):
@@ -158,50 +154,48 @@ class RecordAligner(object):
     def __init__(self):
         self.pta = PartialTreeAligner()
 
-    def align(self, *records, **kwargs):
-        """partial align multiple data records.
+    def align(self, records, record=None, cmp=Record.size):
+        """Partial align multiple data records with partial tree match [1]_
 
-        for example:
+        Parameters
+        ----------
+        records: list
+            A list of the data records.
 
-        >>> from lxml.html import fragment_fromstring
-        >>> t1 = fragment_fromstring("<p> <x1></x1> <x2></x2> <x3></x3> <x></x> <b></b> <d></d> </p>")
-        >>> t2 = fragment_fromstring("<p> <b></b> <n></n> <c></c> <k></k> <g></g> </p>")
-        >>> t3 = fragment_fromstring("<p> <b></b> <c></c> <d></d> <h></h> <k></k> </p>")
+        record: optional
+            The seed record learned before.
+            used to speed up the extraction without finding the seed elements.
 
-        >>> ra = RecordAligner()
-        >>> _, _, seed = ra.align(Record(t1), Record(t2), Record(t3))
-        >>> [e.tag for e in seed[0]]       # seed is a new record with fully aligned with other tress
-        ['x1', 'x2', 'x3', 'x', 'b', 'n', 'c', 'd', 'h', 'k', 'g']
-        >>> [e.tag for e in t1]         # the old DOM tree stay same
-        ['x1', 'x2', 'x3', 'x', 'b', 'd']
+        cmp: optional
+            The function used to get the weight of a ``Record``.
+
+        Returns
+        -------
+        seed_record: ``Record``
+             the seed record to match against other record trees.
+
+        mappings: defaultdict(list)
+             map from seed elements to a list of matched target elements.
+
+        References
+        ----------
+        .. [1] Web Data Extraction Based on Partial Tree Alignment
+        <http://doi.acm.org/10.1145/1060745.1060761>
         """
-        cmp = kwargs.pop('cmp', None) or Record.size
         sorted_records = sorted(records, key=cmp)
 
         # find largest record
-        seed = kwargs.pop('seed_record', None) or sorted_records.pop()
-
+        seed = record or sorted_records.pop()
         seed_copy = copy.deepcopy(seed)
 
-        # a dict like {t2: {}, t3: {}, ...}
-        # the nested dictionary is mapping from seed tree elements to target elements
-        mappings = collections.defaultdict(dict)
-
-        # a dict mapping from tree elements to seed elements
-        reverse_mappings = {}
-
-        initial_mapping = self._create_mapping(seed_copy, seed)
-        reverse_mappings.update(reverse_dict(initial_mapping))
-
-        mappings.setdefault(seed, initial_mapping)
+        mapping = self._create_mapping(seed_copy)
 
         R = []
         while len(sorted_records):
-            next = sorted_records.pop()
-            modified, partial_match, aligned = self.pta.align_records(seed_copy, next)
-            reverse_mappings.update(reverse_dict(aligned))
+            modified, partial_match, aligned = self.pta.align_records(seed_copy, sorted_records.pop())
 
-            mappings.update({next: aligned})
+            for seed_elem, target_elem in aligned.iteritems():
+                mapping.setdefault(seed_elem, []).append(target_elem)
 
             if modified:
                 sorted_records.extend(R)
@@ -211,23 +205,11 @@ class RecordAligner(object):
                 if partial_match:
                     R.append(next)
 
-        return mappings, reverse_mappings, seed_copy
+        return seed_copy, mapping
 
-    def _create_mapping(self, seed, tree):
-        """create a mapping from seed tree to another tree.
-
-        for example:
-
-        >>> from lxml.html import fragment_fromstring
-        >>> t1 = fragment_fromstring("<p> <a></a> <b></b> </p>")
-        >>> t2 = fragment_fromstring("<p> <a></a> <b></b> </p>")
-        >>> ra = RecordAligner()
-        >>> d = ra._create_mapping(Record(t1), Record(t2))
-        >>> d[t1] == t2
-        True
-        """
+    def _create_mapping(self, seed):
         d = {}
-        for s, e in zip(seed, tree):
-            d[s] = e
-            d.update(self._create_mapping(s, e))
+        for e in seed:
+            d[e] = []
+            d.update(self._create_mapping(e))
         return d
