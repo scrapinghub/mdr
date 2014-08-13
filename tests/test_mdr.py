@@ -25,18 +25,18 @@ class MdrTest(unittest.TestCase):
         m = mdr.calculate_similarity_matrix(candidates[0])
         self.assertEquals(1, len(set(mdr.hcluster(m))))
 
-    # def test_extract(self):
-    #     fragment = fragment_fromstring(get_page('fragment0'))
-    #     mdr = MDR()
-    #     seed_record, mapping = mdr.extract(fragment)
+    def test_extract(self):
+        fragment = fragment_fromstring(get_page('fragment0'))
+        mdr = MDR()
+        seed_record, mapping = mdr.extract(fragment)
 
-    #     # record only have 1 <li> elememt
-    #     self.assertEquals(1, len(seed_record))
+        # record only have 1 <li> elememt
+        self.assertEquals(1, len(seed_record))
 
-    #     div = seed_record[0].xpath('//div[contains(@class, "review")]')[0]
-    #     # div is the top element of <li>, and there are 40 items in total, so
-    #     # there are 39 mapped to the div in seed.
-    #     self.assertEquals(39, len(mapping[div]))
+        div = seed_record[0].xpath('//div[contains(@class, "review")]')[0]
+        # div is the top element of <li>, and there are 40 items in total, so
+        # there are 39 mapped to the div in seed.
+        self.assertEquals(39, len(mapping[div]))
 
     def test_extract_with_seed(self):
         fragment = fragment_fromstring(get_page('fragment0'))
