@@ -3,10 +3,11 @@ python: 2.7
 env:
 - TOXENV=py26
 - TOXENV=py27
-- TOXENV=py33
-- TOXENV=py34
 install:
 - pip install tox
+- pip install numpy
+- pip install lxml
+- pip install scipy
 - pip install -U cython
 script:
 - ./update_c.sh
