@@ -1,13 +1,15 @@
 language: python
-python: 2.7
+python:
+    - "2.7_with_system_site_packages"
+before_install:
+    - sudo apt-get update
+    - sudo apt-get install python-numpy python-scipy
 env:
 - TOXENV=py26
 - TOXENV=py27
 install:
 - pip install tox
-- pip install numpy
 - pip install lxml
-- pip install scipy
 - pip install -U cython
 script:
 - ./update_c.sh
