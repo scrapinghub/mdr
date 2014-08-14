@@ -6,13 +6,9 @@ virtualenv:
 before_install:
     - sudo apt-get update
     - sudo apt-get install -qq python-numpy python-scipy
-env:
-- TOXENV=py26
-- TOXENV=py27
-install:
-- pip install tox
-- pip install lxml
-- pip install -U cython
+# env:
+# - TOXENV=py26
+# - TOXENV=py27
 script:
 - ./update_c.sh
-- tox
+- nosetests
