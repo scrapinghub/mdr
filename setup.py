@@ -16,5 +16,5 @@ setup(name='mdr',
       license='MIT',
       packages=find_packages(exclude=['tests', 'tests.*']),
       ext_modules=ext_modules,
-      install_requires=['lxml', 'scipy>=0.7.0', 'numpy>=1.5.1']
+      install_requires=['lxml']
 )

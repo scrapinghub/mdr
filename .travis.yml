@@ -11,6 +11,6 @@ before_install:
 # - TOXENV=py27
 install:
   - pip install lxml
-  - python setup.py -q install
+  - python setup.py build_ext -i
 script:
 - nosetests

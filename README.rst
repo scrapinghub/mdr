@@ -5,6 +5,12 @@ MDR
 MDR is a library detect and extract listing data from HTML page. It implemented base on the `Finding and Extracting Data Records from Web Pages <http://dl.acm.org/citation.cfm?id=1743635>`_ but
 change the similarity to tree alignment proposed by `Web Data Extraction Based on Partial Tree Alignment <http://doi.acm.org/10.1145/1060745.1060761>`_ and `Automatic Wrapper Adaptation by Tree Edit Distance Matching <http://arxiv.org/pdf/1103.1252.pdf>`_.
 
+
+Requires
+========
+
+``numpy`` and ``scipy`` must be installed to build this package.
+
 Usage
 =====
 
