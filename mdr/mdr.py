@@ -114,17 +114,29 @@ class MDR(object):
              map from seed elements to a list of matched target elements.
 
         """
-        m = self.calculate_similarity_matrix(element)
-        clusters = self.hcluster(m)
-        assert len(clusters) == len(m)
+        if record:
+            n = len(element)
+            clusters = []
+            # use index as cluster id
+            for i in range(n):
+                sims = [[clustered_tree_match(element[i], record[j]), j] for j in range(len(record))]
+                clusters.append(max(sims, key=operator.itemgetter(0))[1])
+            rf = RecordFinder()
+            records = rf.find_division(element.getchildren(), clusters, 0)
 
-        rf = RecordFinder(self.tree_sim_cache)
-        records = rf.find_best_division(element.getchildren(), clusters)
+        else:
+            m = self.calculate_similarity_matrix(element)
+            clusters = self.hcluster(m)
+            assert len(clusters) == len(m)
+
+            rf = RecordFinder(self.tree_sim_cache)
+            records = rf.find_best_division(element.getchildren(), clusters)
 
         if records:
             return self.ra.align(records, record)
 
         return None, {}
+
 
     def calculate_similarity_matrix(self, element):
         """calculate the similarity matrix for each child of the given element
@@ -152,7 +164,7 @@ class RecordFinder(object):
     """
     A class to find the record from a list of elements.
     """
-    def __init__(self, cache):
+    def __init__(self, cache={}):
         self.tree_similarity_cache = dict(cache)
 
     def find_best_division(self, elements, clusters):
@@ -164,6 +176,10 @@ class RecordFinder(object):
             a list of the HTML element
         clusters: list
             a list of the cluster id for each element in ``elements``
+
+        Returns
+        -------
+        A list of ``Record``
         """
         assert len(elements) == len(clusters)
 
@@ -189,6 +205,36 @@ class RecordFinder(object):
             all_records.append([average_sim, records])
 
         return max(all_records, key=operator.itemgetter(0))[1]
+
+    def find_division(self, elements, clusters, cluster):
+        """ find the division with given cluster as seperator
+
+        Parameters
+        ----------
+        elements: list
+            a list of the HTML element
+        clusters: list
+            a list of the cluster id for each element in ``elements``
+        cluster: int
+            the cluster id to split the elements.
+
+        Returns
+        -------
+        A list of ``Record``
+        """
+        assert len(elements) == len(clusters)
+
+        if len(set(clusters)) == len(clusters):
+            return None
+
+        records = []
+
+        for group in split_sequence(zip(elements, clusters), lambda x: x[1] == cluster):
+            _clusters = [g[1] for g in group]
+            if len(_clusters) < len(clusters):
+                records.append(Record(*[g[0] for g in group]))
+
+        return records
 
     def calculate_record_similarity(self, r1, r2):
         """calculate similarity between two Records.
