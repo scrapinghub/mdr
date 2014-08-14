@@ -9,6 +9,8 @@ before_install:
 # env:
 # - TOXENV=py26
 # - TOXENV=py27
+install:
+  - pip install lxml
+  - python setup.py -q install
 script:
-- ./update_c.sh
 - nosetests
