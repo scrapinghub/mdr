@@ -281,23 +281,26 @@ class RecordAligner(object):
         <http://doi.acm.org/10.1145/1060745.1060761>
 
         """
-        sorted_records = sorted(records, key=lambda r: r.size())
+        if record:
+            seed = record
+        else:
+            # find biggest record
+            seed = max(records, key=lambda r: r.size())
+            records.remove(seed)
 
-        # find biggest record
-        seed = record or sorted_records.pop()
         seed_copy = copy.deepcopy(seed)
 
         mapping = self._create_mapping(seed_copy)
 
         R = []
-        while len(sorted_records):
-            modified, partial_match, aligned = self.pta.align_records(seed_copy, sorted_records.pop())
+        while len(records):
+            modified, partial_match, aligned = self.pta.align_records(seed_copy, records.pop(0))
 
             for seed_elem, target_elem in aligned.iteritems():
                 mapping.setdefault(seed_elem, []).append(target_elem)
 
             if modified:
-                sorted_records.extend(R)
+                records.extend(R)
                 R = []
             else:
                 # add it back to try it later since seed might change

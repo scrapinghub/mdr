@@ -80,6 +80,15 @@ class MdrTest(unittest.TestCase):
         # div is the top element of <li>, and there are 40 items in total
         self.assertEquals(40, len(mapping[div]))
 
+        extracted_dates = []
+
+        for k, values in mapping.iteritems():
+            if k.attrib.get('itemprop') == 'datePublished':
+                extracted_dates = [v.attrib.get('content') for v in values]
+
+        self.assertEquals(extracted_dates[0], '2014-07-02')
+        self.assertEquals(extracted_dates[-1], '2014-05-18')
+
     def test_extract_with_seed2(self):
 
         mdr = MDR()
@@ -94,5 +103,19 @@ class MdrTest(unittest.TestCase):
         self.assertEquals('hreview', seed_record_copy[1].attrib.get('class'))
         self.assertEquals(27, len(mapping[seed_record_copy[1]]))
 
+        extracted_dates = []
+        extracted_texts = []
+
+        for k, values in mapping.iteritems():
+            if k.attrib.get('class') == 'dtreviewed':
+                extracted_dates = [v.text for v in values]
+            elif k.attrib.get('class') == 'description':
+                extracted_texts = [v.text_content() for v in values]
+
+        # extract items are sorted in original order
+        self.assertEquals(extracted_dates[0], '27-05-2014')
+        self.assertEquals(extracted_dates[-1], '07-07-2013')
+        self.assertEquals(extracted_texts[0], 'Kwaliteit van het eten matig')
+        self.assertEquals(extracted_texts[-1], 'Paviljoen Strand 90 te Domburg is een uiterst sfeervol restaurant. De inrichting is smaakvol met mooie kleuren. De bediening is vriendelijk en behulpzaam. Het eten was lekker. Kortom, we zullen er zeker terug komen.')
 if __name__ == '__main__':
     unittest.main()
