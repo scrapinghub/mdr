@@ -13,4 +13,4 @@ install:
   - pip install lxml
   - python setup.py build_ext -i
 script:
-- nosetests
+- nosetests --with-doctest

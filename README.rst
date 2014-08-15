@@ -23,7 +23,7 @@ Detect listing data
 MDR assume the data record close to the elements has most text nodes::
 
     [1]: import requests
-    [2]: from mdr.mdr import MDR
+    [2]: from mdr import MDR
     [3]: mdr = MDR()
     [4]: r = requests.get('http://www.yelp.co.uk/biz/the-ledbury-london')
     [5]: candidates, doc = mdr.list_candidates(r.text.encode('utf8'))
@@ -44,12 +44,12 @@ MDR assume the data record close to the elements has most text nodes::
 Extract data record
 ~~~~~~~~~~~~~~~~~~~
 
-MDR can find the repetiton pattern by using tree matching under certain candidate DOM tree.then it will build a mapping from so-called `seed element` to a list of matched elements from different DOM trees.
+MDR can find the repetiton pattern by using tree matching under certain candidate DOM tree, then it will build a mapping from seed elements to a list of matched elements on the same parent DOM tree.
 
 Used with annotation (optional)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can annotate the seed record with any tools (e.g. scrapely_) you like, then mdr will be able to find the other  data in the page.
+You can annotate the seed elements with any tools (e.g. scrapely_) you like, then mdr will be able to find the other matched elements on the page.
 
 e.g. you can find this demo page here_. the colored data in first row are annotated manually, the rest are extracted by MDR.
 

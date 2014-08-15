@@ -1,6 +1,6 @@
 import unittest
 from lxml.html import fragment_fromstring
-from mdr.mdr import MDR, Record
+from mdr import MDR, Record
 
 from . import get_page
 
