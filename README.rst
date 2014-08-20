@@ -2,8 +2,8 @@
 MDR
 ===
 
-.. image:: https://travis-ci.org/tpeng/mdr.svg?branch=master
-    :target: https://travis-ci.org/tpeng/mdr
+.. image:: https://travis-ci.org/scrapinghub/mdr.svg?branch=master
+    :target: https://travis-ci.org/scrapinghub/mdr
 
 MDR is a library detect and extract listing data from HTML page. It implemented base on the `Finding and Extracting Data Records from Web Pages <http://dl.acm.org/citation.cfm?id=1743635>`_ but
 change the similarity to tree alignment proposed by `Web Data Extraction Based on Partial Tree Alignment <http://doi.acm.org/10.1145/1060745.1060761>`_ and `Automatic Wrapper Adaptation by Tree Edit Distance Matching <http://arxiv.org/pdf/1103.1252.pdf>`_.
