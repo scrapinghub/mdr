@@ -61,7 +61,15 @@ class MdrTest(unittest.TestCase):
         self.assertEquals('hreview', seed_record[1].attrib.get('class'))
 
         self.assertEquals(28, len(mapping[seed_record[0]]))
-        self.assertEquals(28, len(mapping[seed_record[1]]))
+
+        fragment2 = fragment_fromstring(get_page('fragment2'))
+        seed_record, mapping = mdr.extract(fragment2)
+
+        # record have 2 elememts: <div class='row'> and <div class='row'>
+        self.assertEquals(2, len(seed_record))
+        self.assertEquals('row', seed_record[0].attrib.get('class'))
+        self.assertEquals(6, len(mapping[seed_record[0]]))
+
 
     def test_extract_with_seed(self):
         mdr = MDR()
@@ -117,5 +125,6 @@ class MdrTest(unittest.TestCase):
         self.assertEquals(extracted_dates[-1], '07-07-2013')
         self.assertEquals(extracted_texts[0], 'Kwaliteit van het eten matig')
         self.assertEquals(extracted_texts[-1], 'Paviljoen Strand 90 te Domburg is een uiterst sfeervol restaurant. De inrichting is smaakvol met mooie kleuren. De bediening is vriendelijk en behulpzaam. Het eten was lekker. Kortom, we zullen er zeker terug komen.')
+
 if __name__ == '__main__':
     unittest.main()

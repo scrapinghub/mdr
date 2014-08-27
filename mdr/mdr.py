@@ -44,6 +44,11 @@ class MDR(object):
     This class follow the approach in [1]_ but change the similarity from
     string edit distance to clustered tree match in [2]_ and [3]_.
 
+    Parameters
+    ----------
+    threshold: float
+        the similarity threshold to cluster the DOM trees.
+
     References
     ----------
     .. [1] Using clustering and edit distance techniques for automatic web data extraction
@@ -190,10 +195,9 @@ class RecordFinder(object):
 
         for c in set(clusters):
             records = []
-
             for group in split_sequence(zip(elements, clusters), lambda x: x[1] == c):
                 _clusters = [g[1] for g in group]
-                if c in _clusters and len(_clusters) < len(clusters):
+                if len(_clusters) < len(clusters):
                     records.append(Record(*[g[0] for g in group]))
 
             if not records:
@@ -248,7 +252,7 @@ class RecordFinder(object):
                 assert sim != None, 'tree %s %s not in cache' % (r1[i-1], r2[j-1])
                 m[i, j] = max(m[i, j - 1], m[i - 1, j], m[i - 1][j - 1] + sim)
 
-        return m[i, j]
+        return m[i, j] / max(m.shape[0], m.shape[1])
 
 class RecordAligner(object):
 
@@ -285,7 +289,7 @@ class RecordAligner(object):
             seed = record
         else:
             # find biggest record
-            seed = max(records, key=lambda r: r.size())
+            seed = max(records, key=Record.size)
             records.remove(seed)
 
         seed_copy = copy.deepcopy(seed)

@@ -33,10 +33,11 @@ class RecordFinderTest(unittest.TestCase):
 
         records = rf.find_best_division(elements, clusters)
 
-        # records should be: (b1, c1), (b2, c2)
-        self.assertEquals(2, len(records))
-        self.assertEquals(['b1', 'c1'], [t for t in records[0]])
-        self.assertEquals(['b2', 'c2'], [t for t in records[1]])
+        # records should be: (a), (b1, c1), (b2, c2)
+        self.assertEquals(3, len(records))
+        self.assertEquals(['a'], [t for t in records[0]])
+        self.assertEquals(['b1', 'c1'], [t for t in records[1]])
+        self.assertEquals(['b2', 'c2'], [t for t in records[2]])
 
 
         elements = ['b1', 'c1', 'b2', 'c2']
