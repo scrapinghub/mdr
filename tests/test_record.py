@@ -36,33 +36,37 @@ class RecordAlignerTest(unittest.TestCase):
 
         ra = RecordAligner()
         records = [Record(t1), Record(t2), Record(t3)]
-        seed, mapping = ra.align(records)
+        seed, mappings = ra.align(records)
 
-        self.assertEqual(3, len(seed[0]))
+        self.assertEqual(3, len(mappings))
 
         # all the elements from seed should matched to other 2 trees
         for tag in ['root', 'a', 'b', 'c']:
             e = seed[0].xpath('//%s' % tag)[0]
-            self.assertEqual([tag] * 2, [e.tag for e in mapping[e]])
+            expected = []
+            for record, mapping in mappings.iteritems():
+                expected.append(mapping[e].tag)
+            self.assertEqual([tag] * 3, expected)
 
     def test_align_with_record(self):
 
         ra = RecordAligner()
-        record = Record(t4)
+        seed_record = Record(t4)
 
         records = [Record(t1), Record(t2), Record(t3)]
-        seed, mapping = ra.align(records, record)
+        seed, mappings = ra.align(records, seed_record)
 
-        self.assertEqual(4, len(seed[0]))
+        self.assertEqual(4, len(mappings))
 
         # all the elements from seed should matched to other 3 trees
         for tag in ['root', 'a', 'b', 'c']:
             root = seed[0].xpath('//%s' % tag)[0]
-            self.assertEqual([tag] * 3, [e.tag for e in mapping[root]])
-
-        # only <d></d> left
-        e = seed[0].xpath('//d')[0]
-        self.assertEqual(0, len(mapping[e]))
+            expected = []
+            for record, mapping in mappings.iteritems():
+                if seed_record == record:
+                    continue
+                expected.append(mapping[root].tag)
+            self.assertEqual([tag] * 3, expected)
 
 if __name__ == '__main__':
     unittest.main()

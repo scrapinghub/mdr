@@ -115,8 +115,8 @@ class MDR(object):
         seed_record: ``Record``
              the seed record to match against other record trees.
 
-        mappings: defaultdict(list)
-             map from seed elements to a list of matched target elements.
+        mappings: dict
+             a dict mapping from aligned record to a nested dict mapping from seed element to element.
 
         """
         if record:
@@ -138,7 +138,10 @@ class MDR(object):
             records = rf.find_best_division(element.getchildren(), clusters)
 
         if records:
-            return self.ra.align(records, record)
+            seed_record, mappings = self.ra.align(records, record)
+            if record:
+                mappings.pop(record)
+            return seed_record, mappings
 
         return None, {}
 
@@ -276,8 +279,7 @@ class RecordAligner(object):
         seed_record: ``Record``
              the seed record to match against other record trees.
 
-        mapping: defaultdict(list)
-             map from seed elements to a list of matched target elements.
+        mappings: a dict with record as key and a nested dict map from seed element to aligned element.
 
         References
         ----------
@@ -294,14 +296,14 @@ class RecordAligner(object):
 
         seed_copy = copy.deepcopy(seed)
 
-        mapping = self._create_mapping(seed_copy)
+        mappings = collections.OrderedDict({seed: self._create_mapping(seed_copy, seed)})
 
         R = []
         while len(records):
-            modified, partial_match, aligned = self.pta.align_records(seed_copy, records.pop(0))
+            next = records.pop(0)
+            modified, partial_match, aligned = self.pta.align_records(seed_copy, next)
 
-            for seed_elem, target_elem in aligned.iteritems():
-                mapping.setdefault(seed_elem, []).append(target_elem)
+            mappings.update({next: aligned})
 
             if modified:
                 records.extend(R)
@@ -311,11 +313,23 @@ class RecordAligner(object):
                 if partial_match:
                     R.append(next)
 
-        return seed_copy, mapping
+        return seed_copy, mappings
 
-    def _create_mapping(self, seed):
+    def _create_mapping(self, seed, tree):
+        """create a mapping from seed tree to another tree.
+
+        for example:
+
+        >>> from lxml.html import fragment_fromstring
+        >>> t1 = fragment_fromstring("<p> <a></a> <b></b> </p>")
+        >>> t2 = fragment_fromstring("<p> <a></a> <b></b> </p>")
+        >>> ra = RecordAligner()
+        >>> d = ra._create_mapping(Record(t1), Record(t2))
+        >>> d[t1] == t2
+        True
+        """
         d = {}
-        for e in seed:
-            d[e] = []
-            d.update(self._create_mapping(e))
+        for s, e in zip(seed, tree):
+            d[s] = e
+            d.update(self._create_mapping(s, e))
         return d

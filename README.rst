@@ -44,7 +44,7 @@ MDR assume the data record close to the elements has most text nodes::
 Extract data record
 ~~~~~~~~~~~~~~~~~~~
 
-MDR can find the repetiton pattern by using tree matching under certain candidate DOM tree, then it will build a mapping from seed elements to a list of matched elements on the same parent DOM tree.
+MDR can find the repetiton patterns by using tree matching under certain candidate DOM tree, then it builds a mapping from HTML element to other matched elements of the DOM tree.
 
 Used with annotation (optional)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

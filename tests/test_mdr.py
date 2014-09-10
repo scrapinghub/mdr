@@ -42,33 +42,32 @@ class MdrTest(unittest.TestCase):
 
         page = get_page('htmlpage0')
         candidates, doc = mdr.list_candidates(page, 'utf8')
-        seed_record, mapping = mdr.extract(candidates[0])
+        seed_record, mappings = mdr.extract(candidates[0])
 
         # record only have 1 <li> elememt
         self.assertEquals(1, len(seed_record))
 
-        # div is the top element of <li>, and there are 40 items in total, so
-        # there are 39 mapped to the div in seed.
-        self.assertEquals(39, len(mapping[seed_record[0]]))
+        # div is the top element of <li>, and there are 40 items in total
+        self.assertEquals(40, len(mappings))
 
         page1 = get_page('htmlpage1')
         candidates, doc = mdr.list_candidates(page1, 'utf8')
-        seed_record, mapping = mdr.extract(candidates[0])
+        seed_record, mappings = mdr.extract(candidates[0])
 
         # record have 2 elememts: <div class='divider-horizontal'> and <div class='hreview'>
         self.assertEquals(2, len(seed_record))
         self.assertEquals('divider-horizontal', seed_record[0].attrib.get('class'))
         self.assertEquals('hreview', seed_record[1].attrib.get('class'))
 
-        self.assertEquals(28, len(mapping[seed_record[0]]))
+        self.assertEquals(30, len(mappings))
 
         fragment2 = fragment_fromstring(get_page('fragment2'))
-        seed_record, mapping = mdr.extract(fragment2)
+        seed_record, mappings = mdr.extract(fragment2)
 
         # record have 2 elememts: <div class='row'> and <div class='row'>
         self.assertEquals(2, len(seed_record))
         self.assertEquals('row', seed_record[0].attrib.get('class'))
-        self.assertEquals(6, len(mapping[seed_record[0]]))
+        self.assertEquals(7, len(mappings))
 
 
     def test_extract_with_seed(self):
@@ -80,19 +79,19 @@ class MdrTest(unittest.TestCase):
         seed_record = Record(candidates[0][0])
 
         fragment = fragment_fromstring(get_page('fragment0'))
-        seed_record_copy, mapping = mdr.extract(fragment, seed_record)
+        seed_record_copy, mappings = mdr.extract(fragment, seed_record)
 
-         # record only have 1 <li> elememt
+        # record only have 1 <li> elememt
         self.assertEquals(1, len(seed_record_copy))
-        div = seed_record_copy[0]
-        # div is the top element of <li>, and there are 40 items in total
-        self.assertEquals(40, len(mapping[div]))
+        # 40 items (records)
+        self.assertEquals(40, len(mappings))
 
         extracted_dates = []
 
-        for k, values in mapping.iteritems():
-            if k.attrib.get('itemprop') == 'datePublished':
-                extracted_dates = [v.attrib.get('content') for v in values]
+        for record, mapping in mappings.iteritems():
+            for k, v in mapping.iteritems():
+                if k.attrib.get('itemprop') == 'datePublished':
+                    extracted_dates.append(v.attrib.get('content'))
 
         self.assertEquals(extracted_dates[0], '2014-07-02')
         self.assertEquals(extracted_dates[-1], '2014-05-18')
@@ -105,20 +104,22 @@ class MdrTest(unittest.TestCase):
         seed_record = Record(candidates[0][1], candidates[0][2])
 
         fragment1 = fragment_fromstring(get_page('fragment1'))
-        seed_record_copy, mapping = mdr.extract(fragment1, seed_record)
+        seed_record_copy, mappings = mdr.extract(fragment1, seed_record)
 
         self.assertEquals(2, len(seed_record_copy))
         self.assertEquals('hreview', seed_record_copy[1].attrib.get('class'))
-        self.assertEquals(27, len(mapping[seed_record_copy[1]]))
+        # 27 items (records)
+        self.assertEquals(27, len(mappings))
 
         extracted_dates = []
         extracted_texts = []
 
-        for k, values in mapping.iteritems():
-            if k.attrib.get('class') == 'dtreviewed':
-                extracted_dates = [v.text for v in values]
-            elif k.attrib.get('class') == 'description':
-                extracted_texts = [v.text_content() for v in values]
+        for record, mapping in mappings.iteritems():
+            for k, v in mapping.iteritems():
+                if k.attrib.get('class') == 'dtreviewed':
+                    extracted_dates.append(v.text)
+                elif k.attrib.get('class') == 'description':
+                    extracted_texts.append(v.text)
 
         # extract items are sorted in original order
         self.assertEquals(extracted_dates[0], '27-05-2014')
