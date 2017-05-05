@@ -91,7 +91,7 @@ class MDR(object):
             deepest_common_ancestor = "/".join(common_prefix(*[xpath.split('/') for xpath in elements]))
             counter[deepest_common_ancestor] += 1
 
-        return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True)], doc
+        return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True) if len(doc.xpath(k)[0]) > 0], doc
 
     def extract(self, element, record=None):
         """
