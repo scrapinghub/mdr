@@ -91,7 +91,7 @@ class MDR(object):
             deepest_common_ancestor = "/".join(common_prefix(*[xpath.split('/') for xpath in elements]))
             counter[deepest_common_ancestor] += 1
 
-        return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True)], doc
+        return [doc.xpath(k)[0] for k,v in sorted(counter.items(), key=operator.itemgetter(1), reverse=True) if len(doc.xpath(k)[0]) >= 2], doc
 
     def extract(self, element, record=None):
         """
@@ -119,6 +119,9 @@ class MDR(object):
              a dict mapping from aligned record to a nested dict mapping from seed element to element.
 
         """
+        if len(element) < 2:
+            raise Exception('the element must have at least two children')
+
         if record:
             n = len(element)
             clusters = []
